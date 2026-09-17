@@ -4,6 +4,17 @@ const STORES = ["H Mart", "Galleria", "Metro", "Food Basics", "Loblaws", "T&T"];
 const CATEGORIES = ["전체", "라면·면", "음료", "정육·해산물", "과일·채소", "쌀·곡물", "냉동·간편식", "과자·간식", "소스·양념", "생활·하드웨어", "기타"];
 const REGIONS = ["전체", "공통", "첫 지역만", "비교 지역만"];
 const TONES = { "H Mart": "hmart", Galleria: "galleria", Metro: "metro", "Food Basics": "basics", Loblaws: "loblaws", "T&T": "tt" };
+const KOREAN_SEARCH_TERMS = {
+  라면: ["ramen", "ramyun", "ramyeon", "noodle"], 면: ["noodle", "pasta", "spaghetti", "udon", "soba", "vermicelli"], 국수: ["noodle", "vermicelli", "soba"], 우동: ["udon"], 파스타: ["pasta", "spaghetti"],
+  음료: ["beverage", "drink", "juice", "soda", "water", "milk"], 주스: ["juice"], 탄산: ["soda", "cola"], 콜라: ["cola", "coke"], 커피: ["coffee", "espresso", "latte"], 차: ["tea"], 물: ["water"], 우유: ["milk"], 맥주: ["beer"], 와인: ["wine"],
+  소고기: ["beef", "steak"], 쇠고기: ["beef", "steak"], 돼지고기: ["pork"], 돼지: ["pork"], 닭고기: ["chicken"], 닭: ["chicken"], 고기: ["meat", "beef", "pork", "chicken", "steak"], 생선: ["fish"], 연어: ["salmon"], 새우: ["shrimp", "prawn"], 해산물: ["seafood", "fish", "shrimp", "crab", "squid", "lobster"], 게: ["crab"], 오징어: ["squid"], 참치: ["tuna"],
+  사과: ["apple"], 바나나: ["banana"], 포도: ["grape"], 딸기: ["strawberry", "berry"], 오렌지: ["orange"], 귤: ["mandarin", "tangerine"], 수박: ["watermelon"], 멜론: ["melon"], 망고: ["mango"], 아보카도: ["avocado"], 상추: ["lettuce"], 시금치: ["spinach"], 토마토: ["tomato"], 감자: ["potato"], 양파: ["onion"], 당근: ["carrot"], 고추: ["pepper"], 양배추: ["cabbage"], 오이: ["cucumber"], 과일: ["fruit", "produce"], 채소: ["vegetable", "produce"], 야채: ["vegetable", "produce"],
+  쌀: ["rice"], 현미: ["brown rice"], 곡물: ["grain"], 귀리: ["oat"], 시리얼: ["cereal"], 밀가루: ["flour"], 콩: ["bean", "soy"],
+  냉동: ["frozen"], 만두: ["dumpling"], 피자: ["pizza"], 국: ["soup"], 수프: ["soup"], 김치: ["kimchi"], 두부: ["tofu"], 핫도그: ["hot dog"], 너겟: ["nugget"],
+  과자: ["snack", "chip", "cookie", "cracker"], 쿠키: ["cookie"], 크래커: ["cracker"], 초콜릿: ["chocolate"], 사탕: ["candy"], 아이스크림: ["ice cream"], 팝콘: ["popcorn"], 케이크: ["cake"], 파이: ["pie"],
+  소스: ["sauce"], 양념: ["seasoning", "spice", "sauce"], 기름: ["oil"], 식용유: ["oil"], 식초: ["vinegar"], 드레싱: ["dressing"], 시럽: ["syrup"], 고추장: ["hot pepper paste", "gochujang"], 간장: ["soy sauce"],
+  세제: ["detergent", "cleaner"], 휴지: ["tissue", "toilet paper", "paper towel"], 비누: ["soap"], 샴푸: ["shampoo"], 냄비: ["pot"], 프라이팬: ["pan"], 주방: ["kitchen"], 세탁: ["laundry"],
+};
 
 const state = {
   postal: "M5V 2T6",
@@ -45,6 +56,28 @@ const validPostal = (value) => /^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(tidyPostal(value))
 const dealKey = (deal) => [deal.store, deal.name.toLowerCase().replace(/[^a-z0-9가-힣]/g, ""), deal.price].join("|");
 const formatDate = (value) => new Intl.DateTimeFormat("ko-KR", { timeZone: "America/Toronto", month: "long", day: "numeric" }).format(new Date(value));
 const formatUpdated = (value) => new Intl.DateTimeFormat("ko-KR", { timeZone: "America/Toronto", month: "numeric", day: "numeric", hour: "numeric", minute: "2-digit" }).format(new Date(value));
+const formatMoney = (value) => `$${Number(value).toFixed(2)}`;
+
+function calculateRegularPrice(price, discount) {
+  const salePrice = Number(String(price).replace(/[^0-9.]/g, ""));
+  if (!Number.isFinite(salePrice) || !Number.isFinite(discount) || discount <= 0 || discount >= 100) return null;
+  return salePrice / (1 - discount / 100);
+}
+
+function matchesSearch(deal, query) {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return true;
+  const searchable = `${deal.name} ${deal.store} ${deal.category}`.toLowerCase();
+  return normalized.split(/\s+/).every((word) => {
+    const mappedTerms = KOREAN_SEARCH_TERMS[word];
+    if (!mappedTerms) return searchable.includes(word);
+    return [word, ...mappedTerms].some((alternative) => {
+      if (/[가-힣]/.test(alternative)) return searchable.includes(alternative);
+      const escaped = alternative.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      return new RegExp(`(^|[^a-z0-9])${escaped}([^a-z0-9]|$)`, "i").test(searchable);
+    });
+  });
+}
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
@@ -131,7 +164,7 @@ function getViewData() {
     (state.category === "전체" || state.category === deal.category) &&
     (state.store === "전체" || state.store === deal.store) &&
     (state.selectedFlyer === null || deal.flyerId === state.selectedFlyer) &&
-    deal.name.toLowerCase().includes(state.query.toLowerCase()) &&
+    matchesSearch(deal, state.query) &&
     (state.region === "전체" ||
       (state.region === "공통" && otherKeys.has(dealKey(deal))) ||
       (state.region === "첫 지역만" && deal.area === "main" && !otherKeys.has(dealKey(deal))) ||
@@ -178,8 +211,12 @@ function render() {
     elements.dealGrid.innerHTML = deals.slice(0, state.visibleCount).map((deal) => {
       const image = deal.image ? `<img src="${escapeHtml(deal.image)}" alt="" loading="lazy" onerror="this.style.display='none'" />` : "<span>SALE</span>";
       const area = state.comparison ? `<span class="area-tag">${otherKeys.has(dealKey(deal)) ? "두 지역 공통" : deal.area === "main" ? escapeHtml(state.main.postal) : escapeHtml(state.comparison.postal)}</span>` : "";
-      const discount = deal.discount && deal.discount > 0 ? `<span>${deal.discount}% 할인</span>` : "";
-      return `<a class="deal-card" href="https://flipp.com/en-ca/flyer/${encodeURIComponent(deal.flyerId)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(`${deal.store} ${deal.name} 전단 원문 보기`)}"><div class="product-visual">${image}</div><div class="card-content"><div class="card-meta"><span class="store-tag ${TONES[deal.store]}">${escapeHtml(deal.store)}</span>${area}</div><h3>${escapeHtml(deal.name)}</h3><div class="price-row"><strong>${escapeHtml(deal.price.startsWith("$") ? deal.price : `$${deal.price}`)}</strong>${discount}</div><div class="expiry"><span>${deal.updatedAt ? `전단 업데이트 ${formatUpdated(deal.updatedAt)}` : "전단 업데이트 정보 없음"}</span><span>${formatDate(deal.validTo)}까지 · 원문 보기 ↗</span></div></div></a>`;
+      const regularPrice = calculateRegularPrice(deal.price, deal.discount);
+      const salePrice = formatMoney(String(deal.price).replace(/[^0-9.]/g, ""));
+      const priceDetails = regularPrice
+        ? `<div class="price-values"><span class="regular-price">정상가 약 <s>${formatMoney(regularPrice)}</s></span><strong>세일가 ${salePrice}</strong></div><span class="discount-badge">${deal.discount}% 할인</span>`
+        : `<div class="price-values"><strong>현재가 ${salePrice}</strong></div>`;
+      return `<a class="deal-card" href="https://flipp.com/en-ca/flyer/${encodeURIComponent(deal.flyerId)}" target="_blank" rel="noopener noreferrer" aria-label="${escapeHtml(`${deal.store} ${deal.name} 전단 원문 보기`)}"><div class="product-visual">${image}</div><div class="card-content"><div class="card-meta"><span class="store-tag ${TONES[deal.store]}">${escapeHtml(deal.store)}</span>${area}</div><h3>${escapeHtml(deal.name)}</h3><div class="price-row">${priceDetails}</div><div class="expiry"><span>${deal.updatedAt ? `전단 업데이트 ${formatUpdated(deal.updatedAt)}` : "전단 업데이트 정보 없음"}</span><span>${formatDate(deal.validTo)}까지 · 원문 보기 ↗</span></div></div></a>`;
     }).join("");
   } else {
     elements.dealGrid.innerHTML = state.error ? "" : '<div class="state"><strong>해당 상품이 없어요.</strong><p>카테고리나 검색어를 바꾸거나 다른 우편번호를 입력해 보세요.</p></div>';
