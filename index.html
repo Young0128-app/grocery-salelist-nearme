@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="캐나다 우편번호를 기준으로 주변 마트의 세일 상품을 모아보는 웹앱입니다." />
+    <title>동네세일 | 내 주변 마트 전단 모아보기</title>
+    <link rel="icon" type="image/svg+xml" href="./public/favicon.svg" />
+    <link rel="stylesheet" href="./app/globals.css" />
+    <script src="./app.js" defer></script>
+  </head>
+  <body>
+    <main class="shell">
+      <header class="masthead">
+        <div class="brand"><span class="brand-symbol">%</span><span>동네세일<span class="brand-dot">.</span></span></div>
+        <span class="masthead-note">우리 동네 마트 전단을 한눈에</span>
+        <span class="live-label"><i></i>전단 기준</span>
+      </header>
+
+      <div class="page-container">
+        <section class="intro-row">
+          <div>
+            <p class="eyebrow">NEARBY DEALS · CANADA</p>
+            <h1>오늘 뭐가 세일할까?</h1>
+            <p class="intro-copy">우편번호를 입력하면 6개 마트의 전단 상품을 카테고리별로 모아 보여드려요.</p>
+          </div>
+          <div class="intro-stamp">6<span>개 마트</span></div>
+        </section>
+
+        <form class="location-bar" id="location-form">
+          <div class="location-field">
+            <label for="postal">⌖ 내 주변 우편번호</label>
+            <input id="postal" placeholder="예: M5V 2T6" maxlength="7" autocomplete="postal-code" />
+          </div>
+          <div class="compare-field">
+            <label for="compare">다른 지역과 비교 <span>선택</span></label>
+            <input id="compare" placeholder="다른 우편번호" maxlength="7" autocomplete="postal-code" />
+          </div>
+          <button class="fetch-button" type="submit">세일 보기 ↗</button>
+        </form>
+
+        <div class="source-line">
+          <span id="source-note">토론토 우편번호로 예시를 보여드리고 있어요. 내 우편번호를 입력해 주세요. 전단 적용 지점과 재고는 각 전단에서 확인해 주세요.</span>
+          <a href="https://flipp.com" target="_blank" rel="noopener noreferrer">자료: Flipp ↗</a>
+        </div>
+
+        <section class="workspace">
+          <aside class="filters">
+            <div class="filter-heading"><strong>☷ 마트 고르기</strong></div>
+            <div class="store-list" id="store-list"></div>
+            <div class="flyer-summary" id="flyer-summary"></div>
+            <div id="flyer-versions"></div>
+          </aside>
+
+          <div class="results">
+            <div class="results-top">
+              <div>
+                <p class="eyebrow">THIS WEEK'S FLYERS</p>
+                <h2>이번 주 세일 <span id="deal-count">···</span></h2>
+              </div>
+              <div class="search-box">
+                <span aria-hidden="true">⌕</span>
+                <input id="search" aria-label="상품 검색" placeholder="상품명 검색" />
+                <button id="clear-search" type="button" aria-label="검색 지우기" hidden>×</button>
+              </div>
+            </div>
+            <div class="category-scroll" id="category-list" aria-label="상품 카테고리"></div>
+            <div class="region-tabs" id="region-tabs" hidden></div>
+            <div id="status"></div>
+            <div class="deal-grid" id="deal-grid" aria-live="polite"></div>
+            <button class="more-button" id="more-button" type="button" hidden></button>
+            <div class="disclosure">업데이트 시각은 토론토 현지시간 기준입니다. 상품과 가격은 전단 제공처의 업데이트에 따라 바뀔 수 있습니다. 같은 체인도 지점별 행사와 재고가 다를 수 있으니 구매 전 전단 원문에서 매장을 확인해 주세요. 지역 비교의 ‘공통’은 상품명과 표시 가격이 같은 경우입니다.</div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </body>
+</html>

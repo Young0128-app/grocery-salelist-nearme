@@ -1,0 +1,21 @@
+# 운영체제에서 자동으로 만드는 파일
+.DS_Store
+Thumbs.db
+
+# 비밀값과 개인 설정
+.env
+.env.*
+!.env.example
+
+# 개발 도구가 만드는 임시 폴더
+node_modules/
+.next/
+dist/
+.sites-runtime/
+.wrangler/
+.vinext/
+
+# 로그
+*.log
+npm-debug.log*
+pnpm-debug.log*
